@@ -7,7 +7,6 @@ import { ReportPins, type Pin } from '@/components/map/report-pins';
 import { UserLocationDot } from '@/components/map/user-location-dot';
 import dynamic from 'next/dynamic';
 const SearchField = dynamic(() => import('@/components/ui/search-field').then(m => m.SearchField), { ssr: false });
-import { ReportsNearbyBadge } from '@/components/ui/reports-nearby-badge';
 import { ReportDetailSheet } from '@/components/ui/report-detail-sheet';
 import type { NearReport } from '@/components/screens/navigate';
 import type { Coord } from '@/app/page';
@@ -16,14 +15,15 @@ export function HomeScreen({
   onSearch,
   onReport,
   initialPosition,
+  destinationName,
 }: {
-  onSearch: (destination: Coord) => void;
+  onSearch: (destination: Coord, name: string) => void;
   onReport: () => void;
   initialPosition: Coord | null;
+  destinationName?: string | null;
 }) {
   const [map, setMap] = useState<MbMap | null>(null);
   const [reports, setReports] = useState<NearReport[]>([]);
-  const [nearbyCount, setNearbyCount] = useState<number | null>(null);
   const [clickedReportId, setClickedReportId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,10 +44,6 @@ export function HomeScreen({
             reported_at: r.reported_at,
           })),
         );
-        const recent = list.filter(
-          (r) => Date.now() - new Date(r.reported_at).getTime() < 3600_000,
-        ).length;
-        setNearbyCount(recent);
       })
       .catch(() => {
         /* DB not ready, render gracefully */
@@ -87,16 +83,10 @@ export function HomeScreen({
       <UserLocationDot map={map} position={initialPosition} />
 
       <div className="absolute top-3 left-3 right-3">
-        <SearchField onRetrieve={onSearch} />
+        <SearchField onRetrieve={onSearch} value={destinationName ?? undefined} />
       </div>
 
-      {nearbyCount !== null && (
-        <div className="absolute top-[64px] left-4">
-          <ReportsNearbyBadge count={nearbyCount} />
-        </div>
-      )}
-
-      <div className="absolute bottom-6 left-4 right-4">
+<div className="absolute bottom-6 left-4 right-4">
         <button
           onClick={onReport}
           className="w-full rounded-2xl px-5 py-4 text-left text-white bg-[var(--primary)]

@@ -9,17 +9,21 @@ import { UserLocationDot } from '@/components/map/user-location-dot';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { getVoice } from '@/lib/voice';
 import type { RouteResponse, Coord } from '@/app/page';
+import dynamic from 'next/dynamic';
+const SearchField = dynamic(() => import('@/components/ui/search-field').then(m => m.SearchField), { ssr: false });
 
 export function RouteScreen({
-  origin, destination, mode, onModeChange,
-  onStart, onCancel, setRoutes, routes,
+  origin, destination, destinationName, mode, onModeChange,
+  onStart, onCancel, onDestinationChange, setRoutes, routes,
 }: {
   origin: Coord;
   destination: Coord;
+  destinationName?: string | null;
   mode: 'walking' | 'cycling';
   onModeChange: (mode: 'walking' | 'cycling') => void;
   onStart: (activeRouteId: string) => void;
   onCancel: () => void;
+  onDestinationChange: (dest: Coord, name: string) => void;
   setRoutes: (rs: RouteResponse[]) => void;
   routes: RouteResponse[];
 }) {
@@ -77,6 +81,13 @@ export function RouteScreen({
       <ReportPins map={map} pins={pins} />
       <RouteLine map={map} routes={drawn} mode={mode} />
       <UserLocationDot map={map} position={origin} />
+
+      <div className="absolute top-3 left-3 right-3">
+        <SearchField
+          value={destinationName ?? undefined}
+          onRetrieve={onDestinationChange}
+        />
+      </div>
 
       <BottomSheet>
         <div className="flex bg-[var(--paper-2)] rounded-xl p-1 mb-4">

@@ -28,6 +28,7 @@ export type AppState = {
   screen: Screen;
   origin: Coord | null;
   destination: Coord | null;
+  destinationName: string | null;
   routes: RouteResponse[];
   activeRouteId: string | null;
   mode: 'walking' | 'cycling';
@@ -39,6 +40,7 @@ export default function Page() {
     screen: 'home',
     origin: null,
     destination: null,
+    destinationName: null,
     routes: [],
     activeRouteId: null,
     mode: 'walking',
@@ -88,11 +90,13 @@ export default function Page() {
       {state.screen === 'home' && (
         <HomeScreen
           initialPosition={pos}
-          onSearch={(dest) =>
+          destinationName={state.destinationName}
+          onSearch={(dest, name) =>
             setState((s) => ({
               ...s,
               origin: pos ?? { lat: 52.3676, lng: 4.9041 },
               destination: dest,
+              destinationName: name,
               screen: 'route',
             }))
           }
@@ -111,12 +115,16 @@ export default function Page() {
         <RouteScreen
           origin={state.origin}
           destination={state.destination}
+          destinationName={state.destinationName}
           mode={state.mode}
           onModeChange={setMode}
           routes={state.routes}
           setRoutes={setRoutes}
           onStart={(activeRouteId) => setState((s) => ({ ...s, activeRouteId, screen: 'navigate' }))}
           onCancel={() => goto('home')}
+          onDestinationChange={(dest, name) =>
+            setState((s) => ({ ...s, destination: dest, destinationName: name, routes: [] }))
+          }
         />
       )}
       {state.screen === 'navigate' && state.origin && state.destination && state.activeRouteId && (
