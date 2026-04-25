@@ -10,6 +10,7 @@ import { ArriveScreen } from '@/components/screens/arrive';
 import type { RouteStep } from '@/lib/routing/google-directions';
 import { EmergencyButton } from '@/components/ui/emergency-button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { OnboardingOverlay } from '@/components/ui/onboarding-overlay';
 
 type Screen = 'home' | 'report' | 'route' | 'navigate' | 'arrive';
 
@@ -89,6 +90,7 @@ export default function Page() {
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-[var(--paper)]">
+      <OnboardingOverlay />
       <ThemeToggle />
       <EmergencyButton />
       {state.screen === 'home' && (
