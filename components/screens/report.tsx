@@ -26,6 +26,13 @@ export function ReportScreen({
       const v = await getVoice();
       if (!cancelled) await v.speak('Tell me what\'s happening.');
     })();
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (g) => { posRef.current = { lat: g.coords.latitude, lng: g.coords.longitude }; },
+        () => { /* show error only if still missing when user tries to submit */ },
+        { enableHighAccuracy: true, timeout: 10_000 },
+      );
+    }
     return () => { cancelled = true; };
   }, []);
 
@@ -33,17 +40,6 @@ export function ReportScreen({
     setError(null);
     setTranscript('');
     setState('recording');
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (g) => { posRef.current = { lat: g.coords.latitude, lng: g.coords.longitude }; },
-        () => { setError('need_location'); setState('error'); },
-        { enableHighAccuracy: true, timeout: 5000 },
-      );
-    } else {
-      setError('need_location');
-      setState('error');
-      return;
-    }
     const v = await getVoice();
     listenRef.current = v.listen({ timeoutMs: 12_000 });
     const text = await listenRef.current;
@@ -143,7 +139,7 @@ export function ReportScreen({
           <div className="flex items-center gap-3">
             <span className="text-xl">●</span>
             <div className="display">
-              {state === 'recording' ? 'Release to send' : 'Hold to speak — anonymous'}
+              {state === 'recording' ? 'Tap to send' : 'Tap to speak — anonymous'}
             </div>
           </div>
         </PushToTalkButton>
