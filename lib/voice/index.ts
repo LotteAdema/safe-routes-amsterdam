@@ -12,8 +12,9 @@ export async function getVoice(): Promise<VoiceAdapter> {
   if (cached) return cached;
   const provider = process.env.NEXT_PUBLIC_VOICE ?? 'web-speech';
   if (provider === 'resonate') {
-    // Stub: filled in once Resonate SDK lands. For now fall through to web-speech.
-    console.warn('Resonate adapter not yet implemented, falling back to web-speech');
+    const { ResonateAdapter } = await import('./resonate');
+    cached = new ResonateAdapter();
+    return cached;
   }
   const { WebSpeechAdapter } = await import('./web-speech');
   cached = new WebSpeechAdapter();
