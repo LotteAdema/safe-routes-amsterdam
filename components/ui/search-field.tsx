@@ -1,46 +1,42 @@
 'use client';
 
+import { SearchBox } from '@mapbox/search-js-react';
+
+type SearchBoxRetrieveResponse = Parameters<
+  NonNullable<Parameters<typeof SearchBox>[0]['onRetrieve']>
+>[0];
+
 export function SearchField({
-  value,
-  onChange,
-  onSubmit,
-  placeholder = 'Where to?',
+  onRetrieve,
 }: {
-  value: string;
-  onChange: (v: string) => void;
-  onSubmit: () => void;
-  placeholder?: string;
+  onRetrieve: (coord: { lat: number; lng: number }) => void;
 }) {
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
+
+  function handleRetrieve(res: SearchBoxRetrieveResponse) {
+    const [lng, lat] = res.features[0].geometry.coordinates;
+    onRetrieve({ lat, lng });
+  }
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-      className="bg-white/95 rounded-2xl px-4 py-3 shadow-md flex items-center gap-3 backdrop-blur"
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-[var(--ink-3)] shrink-0"
-        aria-hidden="true"
-      >
-        <circle cx="11" cy="11" r="8" />
-        <path d="m21 21-4.3-4.3" />
-      </svg>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label="Search destination"
-        className="flex-1 outline-none bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-4)]"
+    <div className="bg-white/95 rounded-2xl shadow-md backdrop-blur overflow-hidden">
+      <SearchBox
+        accessToken={token}
+        options={{
+          language: 'en',
+          country: 'NL',
+          proximity: { lng: 4.9041, lat: 52.3676 },
+        }}
+        onRetrieve={handleRetrieve}
+        placeholder="Where to?"
+        theme={{
+          variables: {
+            fontFamily: 'inherit',
+            borderRadius: '1rem',
+            colorBackground: 'transparent',
+          },
+        }}
       />
-    </form>
+    </div>
   );
 }

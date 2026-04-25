@@ -22,7 +22,6 @@ export function HomeScreen({
 }) {
   const [map, setMap] = useState<MbMap | null>(null);
   const [reports, setReports] = useState<NearReport[]>([]);
-  const [destinationText, setDestinationText] = useState('');
   const [nearbyCount, setNearbyCount] = useState<number | null>(null);
   const [clickedReportId, setClickedReportId] = useState<string | null>(null);
 
@@ -80,20 +79,6 @@ export function HomeScreen({
     setClickedReportId(null);
   };
 
-  const onSearchSubmit = async () => {
-    if (!destinationText.trim()) return;
-    const r = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destinationText)}.json` +
-        `?proximity=4.9041,52.3676&country=nl&limit=1` +
-        `&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`,
-    );
-    const data = await r.json();
-    const f = data.features?.[0];
-    if (!f) return;
-    const [lng, lat] = f.center;
-    onSearch({ lat, lng });
-  };
-
   return (
     <div className="absolute inset-0">
       <MapView className="absolute inset-0" onReady={setMap} />
@@ -101,11 +86,7 @@ export function HomeScreen({
       <UserLocationDot map={map} position={initialPosition} />
 
       <div className="absolute top-3 left-3 right-3">
-        <SearchField
-          value={destinationText}
-          onChange={setDestinationText}
-          onSubmit={onSearchSubmit}
-        />
+        <SearchField onRetrieve={onSearch} />
       </div>
 
       {nearbyCount !== null && (
