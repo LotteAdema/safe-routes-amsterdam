@@ -88,10 +88,25 @@ export function HomeScreen({
                      shadow-lg active:scale-[0.99] transition-transform"
         >
           <div className="flex items-center gap-3">
-            <span className="text-xl">🎤</span>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0"
+              aria-hidden="true"
+            >
+              <rect x="9" y="2" width="6" height="13" rx="3" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <path d="M12 19v3" />
+            </svg>
             <div className="leading-tight">
-              <div className="display text-base">Report what you see</div>
-              <div className="text-xs opacity-80">Hold to speak — anonymous</div>
+              <div className="display text-lg">Report what you see</div>
+              <div className="text-sm opacity-80">Hold to speak — anonymous</div>
             </div>
           </div>
         </button>
