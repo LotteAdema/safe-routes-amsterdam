@@ -8,8 +8,10 @@ type SearchBoxRetrieveResponse = Parameters<
 
 export function SearchField({
   onRetrieve,
+  value,
 }: {
-  onRetrieve: (coord: { lat: number; lng: number }) => void;
+  onRetrieve: (coord: { lat: number; lng: number }, name: string) => void;
+  value?: string;
 }) {
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
@@ -17,13 +19,17 @@ export function SearchField({
     const feature = res.features[0];
     if (!feature) return;
     const [lng, lat] = feature.geometry.coordinates;
-    onRetrieve({ lat, lng });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const props = feature.properties as any;
+    const name: string = props?.name ?? props?.full_address ?? '';
+    onRetrieve({ lat, lng }, name);
   }
 
   return (
-    <div className="bg-white/95 rounded-2xl shadow-md backdrop-blur overflow-hidden">
+    <div className="bg-white/95 rounded-2xl shadow-md backdrop-blur">
       <SearchBox
         accessToken={token}
+        value={value}
         options={{
           language: 'en',
           country: 'NL',
@@ -35,7 +41,7 @@ export function SearchField({
           variables: {
             fontFamily: 'inherit',
             borderRadius: '1rem',
-            colorBackground: 'transparent',
+            colorBackground: '#ffffff',
           },
         }}
       />
