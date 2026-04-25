@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import type { Map as MbMap } from 'mapbox-gl';
 import { MapView } from '@/components/map/map-view';
 import { ReportPins, type Pin } from '@/components/map/report-pins';
+import { SearchField } from '@/components/ui/search-field';
+import { ReportsNearbyBadge } from '@/components/ui/reports-nearby-badge';
 import type { Coord } from '@/app/page';
 
 export function HomeScreen({
@@ -46,8 +48,7 @@ export function HomeScreen({
       });
   }, [initialPosition]);
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSearchSubmit = async () => {
     if (!destinationText.trim()) return;
     const r = await fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destinationText)}.json` +
@@ -66,24 +67,17 @@ export function HomeScreen({
       <MapView className="absolute inset-0" onReady={setMap} />
       <ReportPins map={map} pins={pins} />
 
-      <form
-        onSubmit={onSubmit}
-        className="absolute top-3 left-3 right-3 bg-white/95 rounded-2xl px-4 py-3
-                   shadow-md flex items-center gap-3 backdrop-blur"
-      >
-        <span className="opacity-60">⌕</span>
-        <input
+      <div className="absolute top-3 left-3 right-3">
+        <SearchField
           value={destinationText}
-          onChange={(e) => setDestinationText(e.target.value)}
-          placeholder="Where to?"
-          className="flex-1 outline-none bg-transparent text-[var(--ink)] placeholder:text-[var(--ink-4)]"
+          onChange={setDestinationText}
+          onSubmit={onSearchSubmit}
         />
-      </form>
+      </div>
 
-      {nearbyCount !== null && nearbyCount > 0 && (
-        <div className="absolute top-[64px] left-4 text-xs text-[var(--ink-3)]">
-          <span className="inline-block w-2 h-2 rounded-full bg-[var(--sev-acute)] mr-2 align-middle" />
-          <strong>{nearbyCount} reports nearby</strong> in the last hour
+      {nearbyCount !== null && (
+        <div className="absolute top-[64px] left-4">
+          <ReportsNearbyBadge count={nearbyCount} />
         </div>
       )}
 
