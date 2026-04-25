@@ -9,34 +9,27 @@ type State = 'idle' | 'recording' | 'submitting' | 'done' | 'error';
 export function ReportScreen({
   onDone,
   onReported,
+  initialPosition,
+  autoStart,
 }: {
   onDone: () => void;
   /** Called with the new report's id once the server accepts it. */
   onReported?: (id: string) => void;
+  initialPosition?: { lat: number; lng: number } | null;
+  autoStart?: boolean;
 }) {
   const [state, setState] = useState<State>('idle');
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const posRef = useRef<{ lat: number; lng: number } | null>(null);
+  const posRef = useRef<{ lat: number; lng: number } | null>(initialPosition ?? null);
   const listenRef = useRef<Promise<string> | null>(null);
 
+  // Keep posRef in sync as parent's watchPosition resolves.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const v = await getVoice();
-      if (!cancelled) await v.speak('Tell me what\'s happening.');
-    })();
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (g) => { posRef.current = { lat: g.coords.latitude, lng: g.coords.longitude }; },
-        () => { /* show error only if still missing when user tries to submit */ },
-        { enableHighAccuracy: true, timeout: 10_000 },
-      );
-    }
-    return () => { cancelled = true; };
-  }, []);
+    if (initialPosition) posRef.current = initialPosition;
+  }, [initialPosition]);
 
-  const onStart = async () => {
+  const startRecording = async () => {
     setError(null);
     setTranscript('');
     setState('recording');
@@ -45,6 +38,22 @@ export function ReportScreen({
     const text = await listenRef.current;
     setTranscript(text);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    if (autoStart) {
+      startRecording();
+    } else {
+      (async () => {
+        const v = await getVoice();
+        if (!cancelled) await v.speak('Tell me what\'s happening.');
+      })();
+    }
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onStart = startRecording;
 
   const onRelease = async () => {
     if (state !== 'recording') return;

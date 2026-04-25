@@ -54,13 +54,19 @@ export default function Page() {
 
   const [pos, setPos] = useState<Coord | null>(null);
   useEffect(() => {
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return;
-    const id = navigator.geolocation.watchPosition(
-      (g) => setPos({ lat: g.coords.latitude, lng: g.coords.longitude }),
-      () => {},
-      { enableHighAccuracy: true },
-    );
-    return () => navigator.geolocation.clearWatch(id);
+    // Request location + mic permissions upfront so they're granted before an emergency.
+    if (typeof navigator === 'undefined') return;
+    if ('geolocation' in navigator) {
+      const id = navigator.geolocation.watchPosition(
+        (g) => setPos({ lat: g.coords.latitude, lng: g.coords.longitude }),
+        () => {},
+        { enableHighAccuracy: true },
+      );
+      navigator.mediaDevices?.getUserMedia({ audio: true })
+        .then((s) => s.getTracks().forEach((t) => t.stop()))
+        .catch(() => {});
+      return () => navigator.geolocation.clearWatch(id);
+    }
   }, []);
 
   const goto = useCallback((screen: Screen) => {
@@ -95,6 +101,8 @@ export default function Page() {
         <ReportScreen
           onDone={() => goto('home')}
           onReported={(id) => ownReportIdsRef.current.add(id)}
+          initialPosition={pos}
+          autoStart
         />
       )}
       {state.screen === 'route' && state.origin && state.destination && (
