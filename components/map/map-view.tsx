@@ -7,23 +7,38 @@ import mapboxgl, { type Map as MbMap } from 'mapbox-gl';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
-const AMSTERDAM_CENTER: [number, number] = [4.9041, 52.3676];
-
-const PAINT_OVERRIDES: Array<{ layer: string; prop: string; value: string }> = [
-  { layer: 'background', prop: 'background-color', value: 'var(--map-land)' },
-  { layer: 'land', prop: 'background-color', value: 'var(--map-land)' },
-  { layer: 'road-primary', prop: 'line-color', value: 'var(--map-road)' },
-  { layer: 'road-secondary-tertiary', prop: 'line-color', value: 'var(--map-road)' },
-  { layer: 'road-street', prop: 'line-color', value: 'var(--map-road)' },
-  { layer: 'road-pedestrian', prop: 'line-color', value: 'var(--map-road)' },
-  { layer: 'water', prop: 'fill-color', value: 'var(--map-water)' },
-  { layer: 'land-structure-polygon', prop: 'fill-color', value: 'var(--map-block)' },
-];
-
-function resolveCssVar(name: string): string {
-  if (typeof window === 'undefined') return '#000';
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#000';
+function readVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
+
+function applyMapPalette(map: MbMap) {
+  const land = readVar('--map-land');
+  const water = readVar('--map-water');
+  const park = readVar('--map-park');
+  const bridge = readVar('--map-bridge');
+  const roadEdge = readVar('--map-road-edge');
+
+  for (const layer of map.getStyle()?.layers ?? []) {
+    const { id, type } = layer;
+    try {
+      if (type === 'background') {
+        map.setPaintProperty(id, 'background-color', land);
+      } else if (type === 'fill' && /water/i.test(id)) {
+        map.setPaintProperty(id, 'fill-color', water);
+      } else if (type === 'fill' && /(park|landuse|pitch|grass|wood)/i.test(id)) {
+        map.setPaintProperty(id, 'fill-color', park);
+      } else if (type === 'line' && /^bridge/i.test(id)) {
+        map.setPaintProperty(id, 'line-color', bridge);
+      } else if (type === 'line' && /^road/i.test(id) && /case/i.test(id)) {
+        map.setPaintProperty(id, 'line-color', roadEdge);
+      }
+    } catch {
+      // Some layers may not accept the property; skip silently.
+    }
+  }
+}
+
+const AMSTERDAM_CENTER: [number, number] = [4.9041, 52.3676];
 
 export function MapView({
   onReady,
@@ -47,15 +62,7 @@ export function MapView({
     mapRef.current = m;
 
     m.on('style.load', () => {
-      for (const o of PAINT_OVERRIDES) {
-        try {
-          const value = o.value.startsWith('var(') ? resolveCssVar(o.value.slice(4, -1)) : o.value;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          m.setPaintProperty(o.layer, o.prop as any, value);
-        } catch {
-          /* layer may not exist in this style version; ignore */
-        }
-      }
+      applyMapPalette(m);
       onReady?.(m);
     });
 
