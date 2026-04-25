@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+loadEnv({ path: '.env.local' });
+loadEnv();
+
 import { sql } from 'drizzle-orm';
 import { db } from './client';
 import seeds from '../../seeds/amsterdam-reports.json' with { type: 'json' };
