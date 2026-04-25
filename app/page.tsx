@@ -70,6 +70,10 @@ export default function Page() {
     setState((s) => ({ ...s, routes, activeRouteId: routes[0]?.id ?? null }));
   }, []);
 
+  const setMode = useCallback((mode: 'walking' | 'cycling') => {
+    setState((s) => ({ ...s, mode }));
+  }, []);
+
   return (
     <main className="fixed inset-0 overflow-hidden bg-[var(--paper)]">
       {state.screen === 'home' && (
@@ -97,6 +101,7 @@ export default function Page() {
           origin={state.origin}
           destination={state.destination}
           mode={state.mode}
+          onModeChange={setMode}
           routes={state.routes}
           setRoutes={setRoutes}
           onStart={(activeRouteId) => setState((s) => ({ ...s, activeRouteId, screen: 'navigate' }))}

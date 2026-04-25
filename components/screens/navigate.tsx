@@ -5,6 +5,7 @@ import type { Map as MbMap } from 'mapbox-gl';
 import { MapView } from '@/components/map/map-view';
 import { ReportPins, type Pin } from '@/components/map/report-pins';
 import { RouteLine } from '@/components/map/route-line';
+import { UserLocationDot } from '@/components/map/user-location-dot';
 import { getVoice } from '@/lib/voice';
 import type { Coord, RouteResponse } from '@/app/page';
 
@@ -215,17 +216,21 @@ export function NavigateScreen({
     <div className="absolute inset-0">
       <MapView className="absolute inset-0" onReady={setMap} />
       <ReportPins map={map} pins={pins} />
-      <RouteLine map={map} routes={drawn} />
+      <RouteLine map={map} routes={drawn} mode={mode} />
+      <UserLocationDot map={map} position={pos} />
 
       <div
         className="absolute top-3 left-3 right-3 bg-white/95 rounded-2xl px-4 py-3
                       shadow-md flex items-center justify-between backdrop-blur"
       >
         <div>
-          <div className="display text-base text-[var(--ink)]">
-            {active?.duration_min ?? '—'} min
+          <div className="flex items-baseline gap-1.5">
+            <span className="display text-2xl text-[var(--ink)] leading-none">
+              {active?.duration_min ?? '—'}
+            </span>
+            <span className="text-sm text-[var(--ink-3)]">min</span>
           </div>
-          <div className="text-xs text-[var(--ink-3)]">
+          <div className="text-xs text-[var(--ink-3)] mt-1">
             safety score {active?.safety_score.toFixed(2) ?? '—'}
           </div>
         </div>
