@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { HomeScreen } from '@/components/screens/home';
 
 type Screen = 'home' | 'report' | 'route' | 'navigate' | 'arrive';
 
@@ -35,21 +36,35 @@ export default function Page() {
     mode: 'walking',
   });
 
+  const [pos, setPos] = useState<Coord | null>(null);
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (g) => setPos({ lat: g.coords.latitude, lng: g.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 5000 },
+    );
+  }, []);
+
   const goto = useCallback((screen: Screen) => {
     setState((s) => ({ ...s, screen }));
   }, []);
 
-  const setRoutes = useCallback((routes: RouteResponse[]) => {
-    setState((s) => ({ ...s, routes, activeRouteId: routes[0]?.id ?? null }));
-  }, []);
-  void setRoutes;
-
   return (
     <main className="fixed inset-0 overflow-hidden bg-[var(--paper)]">
       {state.screen === 'home' && (
-        <HomeStub onSearch={(dest) => {
-          setState((s) => ({ ...s, destination: dest, screen: 'route' }));
-        }} onReport={() => goto('report')} />
+        <HomeScreen
+          initialPosition={pos}
+          onSearch={(dest) =>
+            setState((s) => ({
+              ...s,
+              origin: pos ?? { lat: 52.3676, lng: 4.9041 },
+              destination: dest,
+              screen: 'route',
+            }))
+          }
+          onReport={() => goto('report')}
+        />
       )}
       {state.screen === 'report' && (
         <ReportStub onDone={() => goto('home')} />
@@ -67,20 +82,6 @@ export default function Page() {
   );
 }
 
-function HomeStub({ onSearch, onReport }: {
-  onSearch: (d: Coord) => void;
-  onReport: () => void;
-}) {
-  return (
-    <div className="p-6">
-      <h1 className="display text-2xl">Home (stub)</h1>
-      <button className="mt-4 underline" onClick={() => onSearch({ lat: 52.3791, lng: 4.9000 })}>
-        Mock: search Centraal
-      </button>
-      <button className="mt-4 ml-4 underline" onClick={onReport}>Report (stub)</button>
-    </div>
-  );
-}
 function ReportStub({ onDone }: { onDone: () => void }) {
   return <button className="m-6 underline" onClick={onDone}>Report stub — back</button>;
 }
