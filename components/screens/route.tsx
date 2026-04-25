@@ -74,23 +74,45 @@ export function RouteScreen({
 
       <BottomSheet>
         {error && <p className="text-[var(--sev-acute)]">No routes available — try again.</p>}
-        {!error && !active && <p className="text-[var(--ink-3)]">Finding the safest route…</p>}
+        {!error && !active && (
+          <div className="flex items-center gap-3 py-1">
+            <span className="text-[var(--ink-3)]">Finding the safest route</span>
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse"
+                style={{ animationDelay: '150ms' }}
+              />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse"
+                style={{ animationDelay: '300ms' }}
+              />
+            </div>
+          </div>
+        )}
         {active && (
           <>
             <h2 className="display text-xl text-[var(--ink)]">
               {active.id === routes[0].id ? 'Safer route' : 'Fastest route'}
             </h2>
-            <p className="text-sm text-[var(--ink-3)] mt-1">
-              {active.duration_min} min · {(active.distance_m / 1000).toFixed(1)} km
-            </p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="display text-4xl text-[var(--ink)] leading-none">
+                {active.duration_min}
+              </span>
+              <span className="text-sm text-[var(--ink-3)]">
+                min · {(active.distance_m / 1000).toFixed(1)} km
+              </span>
+            </div>
             <ul className="text-sm text-[var(--ink-2)] mt-3 space-y-1">
               {active.reasons.map((r, i) => <li key={i}>· {r}</li>)}
             </ul>
             <div className="flex gap-2 mt-4">
               {routes.map((r, i) => (
                 <button key={r.id} onClick={() => setActiveId(r.id)}
-                  className={`flex-1 py-2 rounded-xl text-sm
-                    ${r.id === activeId ? 'bg-[var(--primary)] text-white' : 'bg-[var(--paper-2)] text-[var(--ink)]'}`}>
+                  className={`flex-1 py-2 rounded-xl text-sm active:scale-[0.98] transition-transform
+                    ${r.id === activeId
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'bg-[var(--paper-2)] text-[var(--ink)]'}`}>
                   {i === 0 ? 'Safest' : i === 1 ? 'Alt 1' : 'Alt 2'} · {r.duration_min}m
                 </button>
               ))}

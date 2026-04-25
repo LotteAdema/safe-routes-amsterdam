@@ -170,10 +170,13 @@ export function NavigateScreen({
                       shadow-md flex items-center justify-between backdrop-blur"
       >
         <div>
-          <div className="display text-base text-[var(--ink)]">
-            {active?.duration_min ?? '—'} min
+          <div className="flex items-baseline gap-1.5">
+            <span className="display text-2xl text-[var(--ink)] leading-none">
+              {active?.duration_min ?? '—'}
+            </span>
+            <span className="text-sm text-[var(--ink-3)]">min</span>
           </div>
-          <div className="text-xs text-[var(--ink-3)]">
+          <div className="text-xs text-[var(--ink-3)] mt-1">
             safety score {active?.safety_score.toFixed(2) ?? '—'}
           </div>
         </div>
