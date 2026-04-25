@@ -1,7 +1,24 @@
+export type RouteStep = {
+  instruction: string;
+  maneuver: string;
+  distanceM: number;
+  endLat: number;
+  endLng: number;
+};
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
 export type DirectionsRoute = {
   polyline: string;
   durationSec: number;
   distanceM: number;
+  steps: RouteStep[];
 };
 
 export async function getRoutes(args: {
@@ -28,14 +45,31 @@ export async function getRoutes(args: {
       legs?: Array<{
         duration?: { value: number };
         distance?: { value: number };
+        steps?: Array<{
+          html_instructions: string;
+          maneuver?: string;
+          distance?: { value: number };
+          end_location: { lat: number; lng: number };
+        }>;
       }>;
     }>;
   };
   if (data.status !== 'OK') throw new Error(`directions ${data.status}`);
 
-  return (data.routes ?? []).map((rt) => ({
-    polyline: rt.overview_polyline.points,
-    durationSec: rt.legs?.[0]?.duration?.value ?? 0,
-    distanceM: rt.legs?.[0]?.distance?.value ?? 0,
-  }));
+  return (data.routes ?? []).map((rt) => {
+    const rawSteps = rt.legs?.[0]?.steps ?? [];
+    const steps: RouteStep[] = rawSteps.map((s) => ({
+      instruction: stripHtml(s.html_instructions),
+      maneuver: s.maneuver ?? 'straight',
+      distanceM: s.distance?.value ?? 0,
+      endLat: s.end_location.lat,
+      endLng: s.end_location.lng,
+    }));
+    return {
+      polyline: rt.overview_polyline.points,
+      durationSec: rt.legs?.[0]?.duration?.value ?? 0,
+      distanceM: rt.legs?.[0]?.distance?.value ?? 0,
+      steps,
+    };
+  });
 }
