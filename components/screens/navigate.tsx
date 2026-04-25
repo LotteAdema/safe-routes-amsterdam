@@ -101,14 +101,12 @@ export function NavigateScreen({
         )
           .then((r) => r.json())
           .catch(() => ({ reports: [] }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const eligible = (nearbyResp.reports ?? []).filter(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (r: any) =>
             !promptedIds.current.has(r.id) && !ownReportIdsRef.current.has(r.id),
         );
         if (eligible.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const r = eligible.sort(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (a: any, b: any) =>
