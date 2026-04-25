@@ -55,11 +55,12 @@ export default function Page() {
   const [pos, setPos] = useState<Coord | null>(null);
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return;
-    navigator.geolocation.getCurrentPosition(
+    const id = navigator.geolocation.watchPosition(
       (g) => setPos({ lat: g.coords.latitude, lng: g.coords.longitude }),
       () => {},
-      { enableHighAccuracy: true, timeout: 5000 },
+      { enableHighAccuracy: true },
     );
+    return () => navigator.geolocation.clearWatch(id);
   }, []);
 
   const goto = useCallback((screen: Screen) => {

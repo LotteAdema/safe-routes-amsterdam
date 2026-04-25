@@ -121,7 +121,7 @@ export function HomeScreen({
             </svg>
             <div className="leading-tight">
               <div className="display text-lg">Report what you see</div>
-              <div className="text-sm opacity-80">Hold to speak — anonymous</div>
+              <div className="text-sm opacity-80">Tap to speak — anonymous</div>
             </div>
           </div>
         </button>
