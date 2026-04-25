@@ -18,6 +18,7 @@ export function ReportScreen({
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const posRef = useRef<{ lat: number; lng: number } | null>(null);
+  const listenRef = useRef<Promise<string> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,13 +45,16 @@ export function ReportScreen({
       return;
     }
     const v = await getVoice();
-    const text = await v.listen({ timeoutMs: 12_000 });
+    listenRef.current = v.listen({ timeoutMs: 12_000 });
+    const text = await listenRef.current;
     setTranscript(text);
   };
 
   const onRelease = async () => {
     if (state !== 'recording') return;
-    if (!transcript.trim()) {
+    // Await the in-flight listen() so we get the real transcript, not stale state.
+    const text = (await listenRef.current) ?? '';
+    if (!text.trim()) {
       setError('didnt_catch'); setState('error');
       const v = await getVoice();
       await v.speak("Didn't catch that — try again.");
@@ -64,7 +68,7 @@ export function ReportScreen({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        transcript,
+        transcript: text,
         lat: posRef.current.lat,
         lng: posRef.current.lng,
       }),
