@@ -73,7 +73,7 @@ export function ReportScreen({
         navigator.geolocation.getCurrentPosition(
           (g) => { posRef.current = { lat: g.coords.latitude, lng: g.coords.longitude }; clearTimeout(tid); resolve(); },
           () => { clearTimeout(tid); resolve(); },
-          { enableHighAccuracy: true, timeout: 4_000 },
+          { enableHighAccuracy: false, timeout: 4_000 },
         );
       });
     }
@@ -155,6 +155,7 @@ export function ReportScreen({
       <div className="p-4 pb-8 space-y-3">
         <PushToTalkButton
           onStart={onStart} onRelease={onRelease} onCancel={onCancel}
+          isActive={state === 'recording'}
           disabled={state === 'submitting' || state === 'done'}
         >
           <div className="flex items-center gap-3">
