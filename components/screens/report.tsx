@@ -86,7 +86,22 @@ export function ReportScreen({ onDone }: { onDone: () => void }) {
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <div className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center
           ${state === 'recording' ? 'bg-[var(--accent)] animate-pulse' : 'bg-[var(--primary-3)]'}`}>
-          <span className="text-4xl">🎤</span>
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={state === 'recording' ? 'text-white' : 'text-[var(--primary)]'}
+            aria-hidden="true"
+          >
+            <rect x="9" y="2" width="6" height="13" rx="3" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <path d="M12 19v3" />
+          </svg>
         </div>
         <h1 className="display text-2xl text-[var(--ink)] mb-3">
           {state === 'idle' && 'Tell me what\'s happening'}
