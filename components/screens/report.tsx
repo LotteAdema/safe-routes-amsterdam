@@ -57,6 +57,18 @@ export function ReportScreen({
       return;
     }
     if (!posRef.current) {
+      // GPS may still be resolving — wait up to 4s before giving up.
+      await new Promise<void>((resolve) => {
+        if (posRef.current) { resolve(); return; }
+        const tid = setTimeout(resolve, 4_000);
+        navigator.geolocation.getCurrentPosition(
+          (g) => { posRef.current = { lat: g.coords.latitude, lng: g.coords.longitude }; clearTimeout(tid); resolve(); },
+          () => { clearTimeout(tid); resolve(); },
+          { enableHighAccuracy: true, timeout: 4_000 },
+        );
+      });
+    }
+    if (!posRef.current) {
       setError('need_location'); setState('error'); return;
     }
     setState('submitting');
