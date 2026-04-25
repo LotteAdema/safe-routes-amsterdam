@@ -7,6 +7,7 @@ import { RouteScreen } from '@/components/screens/route';
 import { NavigateScreen, type NearReport } from '@/components/screens/navigate';
 import { PromptOverlay } from '@/components/screens/prompt';
 import { ArriveScreen } from '@/components/screens/arrive';
+import type { RouteStep } from '@/lib/routing/google-directions';
 
 type Screen = 'home' | 'report' | 'route' | 'navigate' | 'arrive';
 
@@ -20,6 +21,7 @@ export type RouteResponse = {
   safety_score: number;
   incidents_avoided: number;
   reasons: string[];
+  steps: RouteStep[];
 };
 
 export type AppState = {

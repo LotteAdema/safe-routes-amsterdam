@@ -171,6 +171,7 @@ export async function POST(req: NextRequest) {
       safety_score: Number(totalScore(rt).toFixed(4)),
       incidents_avoided: Math.max(0, fastestNearbyCount - rt.scored.scored.length),
       reasons,
+      steps: rt.steps,
     };
   });
 
