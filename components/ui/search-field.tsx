@@ -14,7 +14,9 @@ export function SearchField({
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
   function handleRetrieve(res: SearchBoxRetrieveResponse) {
-    const [lng, lat] = res.features[0].geometry.coordinates;
+    const feature = res.features[0];
+    if (!feature) return;
+    const [lng, lat] = feature.geometry.coordinates;
     onRetrieve({ lat, lng });
   }
 
