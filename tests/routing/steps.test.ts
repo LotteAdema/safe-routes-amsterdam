@@ -8,7 +8,8 @@ function stripHtml(html: string): string {
     .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ');
 }
 
 describe('stripHtml', () => {
@@ -24,6 +25,10 @@ describe('stripHtml', () => {
 
   it('decodes html entities', () => {
     expect(stripHtml('Take exit &amp; continue')).toBe('Take exit & continue');
+  });
+
+  it('decodes &nbsp; to a space', () => {
+    expect(stripHtml('Turn right&nbsp;toward Dam')).toBe('Turn right toward Dam');
   });
 
   it('returns plain text unchanged', () => {

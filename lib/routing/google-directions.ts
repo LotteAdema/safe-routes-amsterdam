@@ -11,7 +11,8 @@ function stripHtml(html: string): string {
     .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ');
 }
 
 export type DirectionsRoute = {
