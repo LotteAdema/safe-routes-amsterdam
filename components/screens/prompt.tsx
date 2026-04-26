@@ -41,7 +41,7 @@ export function PromptOverlay({
       const v = await getVoice();
       await v.speak(`Someone reported ${report.summary} here. Are you experiencing the same?`);
       if (cancelled) return;
-      const ans = await v.listen({ timeoutMs: 8000 });
+      const ans = await v.listen({ timeoutMs: 8000 }).result;
       if (cancelled) return;
       submit(parseYesNo(ans));
     })();

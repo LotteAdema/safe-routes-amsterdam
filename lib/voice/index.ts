@@ -1,7 +1,15 @@
+export interface ListenHandle {
+  /** Resolves when the microphone is actually capturing audio. */
+  ready: Promise<void>;
+  /** Resolves with the final transcript when listening ends, or '' on timeout/error. */
+  result: Promise<string>;
+  /** Requests a graceful early end (flush remaining audio and resolve `result`). */
+  stop(): void;
+}
+
 export interface VoiceAdapter {
   speak(text: string): Promise<void>;
-  /** Resolves with the final transcript when the user stops speaking, or '' on timeout. */
-  listen(opts?: { timeoutMs?: number }): Promise<string>;
+  listen(opts?: { timeoutMs?: number }): ListenHandle;
   /** True if the adapter is supported in this environment. */
   isSupported(): boolean;
 }
