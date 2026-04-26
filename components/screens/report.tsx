@@ -2,9 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { getVoice } from '@/lib/voice';
+import type { ListenHandle } from '@/lib/voice';
 import { PushToTalkButton } from '@/components/ui/push-to-talk-button';
 
-type State = 'idle' | 'recording' | 'waiting_location' | 'submitting' | 'done' | 'error';
+type State =
+  | 'idle'
+  | 'preparing'
+  | 'recording'
+  | 'waiting_location'
+  | 'submitting'
+  | 'done'
+  | 'error';
 
 export function ReportScreen({
   onDone,
@@ -21,7 +29,7 @@ export function ReportScreen({
   const [transcript, setTranscript] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const posRef = useRef<{ lat: number; lng: number } | null>(initialPosition ?? null);
-  const listenRef = useRef<Promise<string> | null>(null);
+  const handleRef = useRef<ListenHandle | null>(null);
   const pendingTranscriptRef = useRef('');
   const waitingRef = useRef(false);
 
@@ -65,10 +73,17 @@ export function ReportScreen({
   const startRecording = async () => {
     setErrorMsg(null);
     setTranscript('');
-    setState('recording');
+    setState('preparing');
     const v = await getVoice();
-    listenRef.current = v.listen({ timeoutMs: 12_000 });
-    const text = await listenRef.current;
+    const handle = v.listen({ timeoutMs: 12_000 });
+    handleRef.current = handle;
+    // Only flip the UI to "recording" once the mic is actually capturing,
+    // so the user doesn't speak into a still-cold microphone.
+    handle.ready.then(() => {
+      // Guard against late ready after the user already cancelled.
+      setState((s) => (s === 'preparing' ? 'recording' : s));
+    });
+    const text = await handle.result;
     setTranscript(text);
   };
 
@@ -90,7 +105,9 @@ export function ReportScreen({
 
   const onRelease = async () => {
     if (state !== 'recording') return;
-    const text = (await listenRef.current) ?? '';
+    // Tell the adapter to flush now instead of waiting for the timeout.
+    handleRef.current?.stop();
+    const text = (await handleRef.current?.result) ?? '';
     if (!text.trim()) {
       setState('error');
       setErrorMsg("Didn't catch that — try again");
@@ -123,6 +140,7 @@ export function ReportScreen({
 
   const onCancel = async () => {
     waitingRef.current = false;
+    handleRef.current?.stop();
     setState('idle');
     setTranscript('');
     const v = await getVoice();
@@ -131,6 +149,7 @@ export function ReportScreen({
 
   const heading = {
     idle: "Tell me what's happening",
+    preparing: 'Opening mic…',
     recording: 'Listening…',
     waiting_location: 'Got it — finding your location…',
     submitting: 'Sending…',
@@ -139,13 +158,19 @@ export function ReportScreen({
   }[state];
 
   const isActive = state === 'recording';
-  const isLocked = state === 'submitting' || state === 'done' || state === 'waiting_location';
+  const isLocked =
+    state === 'preparing' ||
+    state === 'submitting' ||
+    state === 'done' ||
+    state === 'waiting_location';
+  const isPulsing =
+    state === 'preparing' || state === 'recording' || state === 'waiting_location';
 
   return (
     <div className="absolute inset-0 bg-[var(--paper)] flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <div className={`mb-8 w-24 h-24 rounded-full flex items-center justify-center
-          ${state === 'recording' || state === 'waiting_location'
+          ${isPulsing
             ? 'bg-[var(--accent)] animate-pulse'
             : 'bg-[var(--primary-3)]'}`}>
           <svg
@@ -157,7 +182,7 @@ export function ReportScreen({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={isActive || state === 'waiting_location' ? 'text-white' : 'text-[var(--primary)]'}
+            className={isPulsing ? 'text-white' : 'text-[var(--primary)]'}
             aria-hidden="true"
           >
             <rect x="9" y="2" width="6" height="13" rx="3" />
@@ -181,6 +206,7 @@ export function ReportScreen({
             <span className="text-xl">●</span>
             <div className="display">
               {state === 'recording' ? 'Tap to send' :
+               state === 'preparing' ? 'Opening mic…' :
                state === 'waiting_location' ? 'Finding location…' :
                'Tap to speak — anonymous'}
             </div>

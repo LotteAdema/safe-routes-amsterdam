@@ -1,4 +1,4 @@
-import type { VoiceAdapter } from './index';
+import type { ListenHandle, VoiceAdapter } from './index';
 
 // Token cached client-side; expires_in is 600s so we refresh 60s early.
 let _cached: { token: string; expiresAt: number } | null = null;
@@ -46,57 +46,97 @@ export class ResonateAdapter implements VoiceAdapter {
     });
   }
 
-  async listen(opts: { timeoutMs?: number } = {}): Promise<string> {
+  listen(opts: { timeoutMs?: number } = {}): ListenHandle {
     const timeoutMs = opts.timeoutMs ?? 8000;
-    const token = await fetchToken();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mimeType = pickMimeType();
 
-    return new Promise((resolve) => {
-      const ws = new WebSocket('wss://api.reson8.dev/v1/speech-to-text/realtime', [
+    let resolveReady!: () => void;
+    const ready = new Promise<void>((r) => { resolveReady = r; });
+
+    let resolveResult!: (text: string) => void;
+    const result = new Promise<string>((r) => { resolveResult = r; });
+
+    let transcript = '';
+    let resolved = false;
+    let recorder: MediaRecorder | null = null;
+    let stream: MediaStream | null = null;
+    let ws: WebSocket | null = null;
+    let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    let flushSent = false;
+
+    const finish = () => {
+      if (resolved) return;
+      resolved = true;
+      // Resolve ready in case stop() was called before mic ever opened.
+      resolveReady();
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (flushTimer) clearTimeout(flushTimer);
+      try { recorder?.stop(); } catch {}
+      stream?.getTracks().forEach((t) => t.stop());
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        ws.close();
+      }
+      resolveResult(transcript.trim());
+    };
+
+    const requestFlush = () => {
+      if (resolved || flushSent) return;
+      flushSent = true;
+      try { recorder?.stop(); } catch {}
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try { ws.send(JSON.stringify({ type: 'flush_request', id: 'done' })); } catch {}
+        // Fall back to finishing if the server doesn't confirm in time.
+        flushTimer = setTimeout(finish, 2000);
+      } else {
+        finish();
+      }
+    };
+
+    (async () => {
+      let token: string;
+      try {
+        token = await fetchToken();
+      } catch {
+        return finish();
+      }
+      if (resolved) return;
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        return finish();
+      }
+      if (resolved) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
+      const mimeType = pickMimeType();
+
+      ws = new WebSocket('wss://api.reson8.dev/v1/speech-to-text/realtime', [
         'bearer',
         token,
       ]);
 
-      let transcript = '';
-      let recorder: MediaRecorder | null = null;
-      let resolved = false;
-      let flushTimer: ReturnType<typeof setTimeout> | null = null;
-
-      const finish = () => {
-        if (resolved) return;
-        resolved = true;
-        if (flushTimer) clearTimeout(flushTimer);
-        try { recorder?.stop(); } catch {}
-        stream.getTracks().forEach((t) => t.stop());
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close();
-        }
-        resolve(transcript.trim());
-      };
-
       ws.onopen = () => {
-        const opts: MediaRecorderOptions = mimeType ? { mimeType } : {};
-        recorder = new MediaRecorder(stream, opts);
+        if (resolved || !stream) return;
+        const recOpts: MediaRecorderOptions = mimeType ? { mimeType } : {};
+        recorder = new MediaRecorder(stream, recOpts);
 
         recorder.ondataavailable = (e) => {
-          if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
             e.data.arrayBuffer().then((buf) => {
-              if (ws.readyState === WebSocket.OPEN) ws.send(buf);
+              if (ws && ws.readyState === WebSocket.OPEN) ws.send(buf);
             });
           }
         };
 
         recorder.start(100); // 100ms chunks for low latency
+        // Mic is hot — UI may now show "Listening…".
+        resolveReady();
 
-        // After timeoutMs, flush remaining audio and wait up to 2s for confirmation.
-        setTimeout(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            try { recorder?.stop(); } catch {}
-            ws.send(JSON.stringify({ type: 'flush_request', id: 'done' }));
-          }
-          flushTimer = setTimeout(finish, 2000);
-        }, timeoutMs);
+        // Hard cap: after timeoutMs of audio, flush and wrap up.
+        timeoutTimer = setTimeout(requestFlush, timeoutMs);
       };
 
       ws.onmessage = (e) => {
@@ -114,6 +154,12 @@ export class ResonateAdapter implements VoiceAdapter {
 
       ws.onerror = () => finish();
       ws.onclose = () => { if (!resolved) finish(); };
-    });
+    })();
+
+    return {
+      ready,
+      result,
+      stop: requestFlush,
+    };
   }
 }

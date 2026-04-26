@@ -1,4 +1,4 @@
-import type { VoiceAdapter } from './index';
+import type { ListenHandle, VoiceAdapter } from './index';
 
 // `SpeechRecognition` and related types are not in TypeScript's default DOM lib.
 // We declare them as opaque types so this file type-checks in any environment;
@@ -12,6 +12,8 @@ interface SpeechRecognitionInstance {
   onresult: ((e: SpeechRecognitionResultEvent) => void) | null;
   onerror: ((e: unknown) => void) | null;
   onend: ((e: unknown) => void) | null;
+  onstart: ((e: unknown) => void) | null;
+  onaudiostart: ((e: unknown) => void) | null;
   start(): void;
   stop(): void;
 }
@@ -50,32 +52,59 @@ export class WebSpeechAdapter implements VoiceAdapter {
     });
   }
 
-  listen(opts: { timeoutMs?: number } = {}): Promise<string> {
-    return new Promise((resolve) => {
-      const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!Ctor) return resolve('');
-      const rec = new Ctor();
-      rec.lang = 'en-US';
-      rec.continuous = false;
-      rec.interimResults = false;
+  listen(opts: { timeoutMs?: number } = {}): ListenHandle {
+    const Ctor = typeof window !== 'undefined'
+      ? window.SpeechRecognition || window.webkitSpeechRecognition
+      : undefined;
 
-      let resolved = false;
-      const finish = (text: string) => {
-        if (resolved) return;
-        resolved = true;
+    if (!Ctor) {
+      return {
+        ready: Promise.resolve(),
+        result: Promise.resolve(''),
+        stop: () => {},
+      };
+    }
+
+    const rec = new Ctor();
+    rec.lang = 'en-US';
+    rec.continuous = false;
+    rec.interimResults = false;
+
+    let resolveReady!: () => void;
+    const ready = new Promise<void>((r) => { resolveReady = r; });
+
+    let resolveResult!: (text: string) => void;
+    const result = new Promise<string>((r) => { resolveResult = r; });
+
+    let resolved = false;
+    const finish = (text: string) => {
+      if (resolved) return;
+      resolved = true;
+      resolveReady();
+      try { rec.stop(); } catch {}
+      resolveResult(text);
+    };
+
+    rec.onaudiostart = () => resolveReady();
+    rec.onstart = () => resolveReady();
+    rec.onresult = (e: SpeechRecognitionResultEvent) => {
+      const last = e.results[e.results.length - 1];
+      if (last.isFinal) finish(last[0].transcript ?? '');
+    };
+    rec.onerror = () => finish('');
+    rec.onend = () => finish('');
+
+    setTimeout(() => finish(''), opts.timeoutMs ?? 8000);
+    rec.start();
+
+    return {
+      ready,
+      result,
+      stop: () => {
+        // Graceful end: tell the recognizer to finalize. onresult / onend
+        // will fire with whatever it has and resolve the result promise.
         try { rec.stop(); } catch {}
-        resolve(text);
-      };
-
-      rec.onresult = (e: SpeechRecognitionResultEvent) => {
-        const last = e.results[e.results.length - 1];
-        if (last.isFinal) finish(last[0].transcript ?? '');
-      };
-      rec.onerror = () => finish('');
-      rec.onend = () => finish('');
-
-      setTimeout(() => finish(''), opts.timeoutMs ?? 8000);
-      rec.start();
-    });
+      },
+    };
   }
 }
