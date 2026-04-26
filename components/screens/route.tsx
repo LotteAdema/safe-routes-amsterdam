@@ -82,16 +82,26 @@ export function RouteScreen({
   }));
   const active = routes.find((r) => r.id === activeId);
 
+  // Assign each route a unique label. Priority Safest > Fastest > Shortest;
+  // if a category's #1 collides with one already labeled, fall through to the
+  // next-best route in that category — so 3 routes always get 3 unique labels.
   const routeLabels = new Map<string, string>();
   if (routes.length > 0) {
-    const safest = routes.reduce((a, b) => (a.safety_score < b.safety_score ? a : b));
-    const fastest = routes.reduce((a, b) => (a.duration_min < b.duration_min ? a : b));
-    const shortest = routes.reduce((a, b) => (a.distance_m < b.distance_m ? a : b));
+    const bySafety = [...routes].sort((a, b) => a.safety_score - b.safety_score);
+    const byDuration = [...routes].sort((a, b) => a.duration_min - b.duration_min);
+    const byDistance = [...routes].sort((a, b) => a.distance_m - b.distance_m);
+
+    routeLabels.set(bySafety[0].id, 'Safest');
+    const nextFastest = byDuration.find((r) => !routeLabels.has(r.id));
+    if (nextFastest) routeLabels.set(nextFastest.id, 'Fastest');
+    const nextShortest = byDistance.find((r) => !routeLabels.has(r.id));
+    if (nextShortest) routeLabels.set(nextShortest.id, 'Shortest');
+
+    let altIdx = 1;
     for (const r of routes) {
-      if (r.id === safest.id) routeLabels.set(r.id, 'Safest');
-      else if (r.id === fastest.id) routeLabels.set(r.id, 'Fastest');
-      else if (r.id === shortest.id) routeLabels.set(r.id, 'Shortest');
-      else routeLabels.set(r.id, 'Alt');
+      if (!routeLabels.has(r.id)) {
+        routeLabels.set(r.id, routes.length > 4 ? `Alt ${altIdx++}` : 'Alt');
+      }
     }
   }
   const labelFor = (r: RouteResponse) => routeLabels.get(r.id) ?? 'Alt';
@@ -213,14 +223,10 @@ export function RouteScreen({
             <p className="text-sm text-[var(--ink-3)] mt-1">
               Arrive at {new Date(Date.now() + active.duration_min * 60_000).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
             </p>
-            {(() => {
-              const visible = active.reasons.filter(
-                (r) => sheetExpanded || /acute report/i.test(r),
-              );
-              if (visible.length === 0) return null;
-              return (
+            {sheetExpanded ? (
+              active.reasons.length > 0 && (
                 <ul className="text-sm text-[var(--ink-2)] mt-3 space-y-1">
-                  {visible.map((r, i) => (
+                  {active.reasons.map((r, i) => (
                     <li key={i}>
                       · {r}
                       {reasonPlaces[r] && (
@@ -229,8 +235,29 @@ export function RouteScreen({
                     </li>
                   ))}
                 </ul>
-              );
-            })()}
+              )
+            ) : (
+              <ul className="text-sm text-[var(--ink-2)] mt-3 space-y-1">
+                {routes.map((r) => {
+                  const isActive = r.id === activeId;
+                  const firstReason = r.reasons[0];
+                  return (
+                    <li key={r.id}>
+                      <button
+                        onClick={() => setActiveId(r.id)}
+                        className={`text-left ${isActive ? 'font-semibold text-[var(--ink)]' : 'opacity-60'}`}
+                      >
+                        · <strong>{labelFor(r)}:</strong>{' '}
+                        {firstReason ?? 'No specific avoidances'}
+                        {firstReason && reasonPlaces[firstReason] && (
+                          <span className="text-[var(--ink-3)]"> — near {reasonPlaces[firstReason]}</span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
             <div className="flex gap-2 mt-4">
               {routes.map((r) => (
                 <button key={r.id} onClick={() => setActiveId(r.id)}
