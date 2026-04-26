@@ -10,6 +10,7 @@ import { ManeuverIcon } from '@/components/ui/maneuver-icon';
 import { formatDistance, remainingDistance } from '@/lib/navigate/format';
 import { isNewHighAcute } from '@/lib/navigate/acute';
 import { getVoice } from '@/lib/voice';
+import { ReportScreen } from '@/components/screens/report';
 import type { Coord, RouteResponse } from '@/app/page';
 
 const POLL_MS = 7_000;
@@ -44,6 +45,7 @@ export function NavigateScreen({
   const [map, setMap] = useState<MbMap | null>(null);
   const [pos, setPos] = useState<Coord | null>(origin);
   const [pins, setPins] = useState<Pin[]>([]);
+  const [showReport, setShowReport] = useState(false);
 
   // Reset step index when the active route changes (React "adjust state during render" pattern).
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
@@ -305,6 +307,42 @@ export function NavigateScreen({
           End trip
         </button>
       </div>
+
+      <button
+        onClick={() => setShowReport(true)}
+        aria-label="Report what you see"
+        className="absolute bottom-32 right-4 z-40 w-14 h-14 rounded-full
+                   bg-[var(--primary)] text-white shadow-lg
+                   flex items-center justify-center
+                   active:scale-[0.95] transition-transform"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="9" y="2" width="6" height="13" rx="3" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+          <path d="M12 19v3" />
+        </svg>
+      </button>
+
+      {showReport && (
+        <div className="fixed inset-0 z-[55]">
+          <ReportScreen
+            onDone={() => setShowReport(false)}
+            onReported={(id) => ownReportIdsRef.current.add(id)}
+            initialPosition={pos}
+            autoStart
+          />
+        </div>
+      )}
 
       {steps.length > 0 && steps[currentStepIdx] && (() => {
         const step = steps[currentStepIdx];
