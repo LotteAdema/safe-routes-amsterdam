@@ -82,7 +82,7 @@ export function RouteScreen({
       <RouteLine map={map} routes={drawn} mode={mode} />
       <UserLocationDot map={map} position={origin} />
 
-      <div className="absolute top-3 left-3 right-3">
+      <div className="absolute top-3 left-20 right-20">
         <SearchField
           value={destinationName ?? undefined}
           onRetrieve={onDestinationChange}

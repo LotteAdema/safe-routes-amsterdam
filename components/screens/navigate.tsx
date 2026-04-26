@@ -284,7 +284,7 @@ export function NavigateScreen({
       <UserLocationDot map={map} position={pos} />
 
       <div
-        className="absolute top-3 left-16 right-16 bg-[var(--card)]/95 rounded-2xl px-4 py-3
+        className="absolute top-3 left-20 right-20 bg-[var(--card)]/95 rounded-2xl px-4 py-3
                       shadow-md flex items-center justify-between backdrop-blur"
       >
         <div>
