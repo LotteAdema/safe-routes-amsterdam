@@ -28,7 +28,7 @@ export function HomeScreen({
 
   useEffect(() => {
     const center = initialPosition ?? { lat: 52.3676, lng: 4.9041 };
-    fetch(`/api/reports/near?lat=${center.lat}&lng=${center.lng}&radius=2000`)
+    fetch(`/api/reports/near?lat=${center.lat}&lng=${center.lng}&radius=10000`)
       .then((r) => r.json())
       .then((data) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

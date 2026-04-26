@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const lat = Number(url.searchParams.get('lat'));
   const lng = Number(url.searchParams.get('lng'));
-  const radius = Math.min(Number(url.searchParams.get('radius') ?? 200), 2000);
+  const radius = Math.min(Number(url.searchParams.get('radius') ?? 200), 10000);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     return NextResponse.json({ error: 'invalid_coords' }, { status: 400 });
