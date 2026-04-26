@@ -4,6 +4,20 @@ import { useEffect, useState } from 'react';
 
 const SLIDES = [
   {
+    title: 'Safer',
+    description: 'Routes that prioritize your safety, built from community reports.',
+    icon: (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src="/logo.png"
+        alt="Safer logo"
+        width={140}
+        height={140}
+        className="rounded-3xl"
+      />
+    ),
+  },
+  {
     title: 'Speak up, anonymously',
     description:
       'Tap the green button to report what you see — voice only. No typing, no identity, no trail.',
